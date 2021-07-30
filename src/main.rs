@@ -125,10 +125,7 @@ fn main(){
                                println!("State {:?}", state);
                               if prev_state == State::StartOfTransfer || prev_state == DataTransfer{
                                     let state = match can_frames.next(){
-                                        None => {
-                                            println!("None");
-                                            State::EndOfTransfer
-                                        }
+                                        None => {  State::EndOfTransfer }
                                         Some(frame) => {
                                             let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
                                                                               frame
@@ -138,7 +135,13 @@ fn main(){
                                             index += 1;
                                             println!("Send: {}", index);
                                             prev_state = state;
-                                            State::DataTransfer
+                                            if can_frames.next() == None{
+                                                State::EndOfTransfer
+                                            }
+                                            else{
+                                                State::DataTransfer
+                                            }
+
                                         }
                                     };
                                    state
