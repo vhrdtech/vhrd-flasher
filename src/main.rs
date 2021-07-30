@@ -85,6 +85,7 @@ fn main(){
 
     let nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
     let crc = unsafe{ Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(&nv_slice[8..SIZE_OF_NVCONFIG]) as u64};
+    println!("CRC 0x{:032x}", crc);
     NV_CONFIG.config_crc = crc;
 
     let can_iface = matches.value_of("can_bus_iface").unwrap();
