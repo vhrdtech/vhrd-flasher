@@ -1,0 +1,11 @@
+[package]
+name = "vhrd-flasher"
+version = "0.1.0"
+authors = ["Matvei <matvei@wheel.me>"]
+edition = "2018"
+
+[dependencies]
+socketcan = {git = "https://github.com/klimatt/socketcan-rs.git", branch = "1.7.0"}
+vhrd-module-nvconfig = {git = "https://github.com/vhrdtech/vhrd-module-nvconfig.git", branch = "master"}
+clap = "3.0.0-beta.1"
+crc = "2.0.0"
