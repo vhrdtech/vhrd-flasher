@@ -83,8 +83,8 @@ fn main(){
 
     let ptr = &NV_CONFIG as *const _;
 
-    let nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
-    let crc = unsafe{ Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(&nv_slice[0..SIZE_OF_NVCONFIG - 8]) as u64};
+    let mut nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
+    let crc = unsafe{ Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(&nv_slice[8..SIZE_OF_NVCONFIG]) as u64};
     println!("CRC 0x{:032x}", crc);
     NV_CONFIG.config_crc = crc;
 
@@ -96,6 +96,8 @@ fn main(){
             cs
         },
     };
+
+    nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
 
     cs.set_read_timeout(Duration::from_millis(100));
     let mut index = 0;
