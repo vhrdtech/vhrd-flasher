@@ -60,7 +60,7 @@ fn main(){
                 patch: 5
             },
             bootloader_size: 0,
-            bootloader_crc: 0,
+            bootloader_crc: 23,
             bootloader_timeout_ms: 0,
             fw_version: Version {
                 major: 6,
@@ -85,6 +85,9 @@ fn main(){
 
     let mut nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
     let crc = unsafe{ Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(&nv_slice[8..SIZE_OF_NVCONFIG]) as u64};
+    for i in 0..10{
+        println!("nv_sile[{}]: {}",i, nv_slice[i]);
+    }
     println!("CRC 0x{:032x}", crc);
     NV_CONFIG.config_crc = crc;
 
@@ -103,6 +106,7 @@ fn main(){
     let mut index = 0;
 
     let mut can_frames = nv_slice.chunks_exact(8);
+    let remaining = can_frames.remainder();
     loop {
         match cs.read_frame() {
             Ok(f) => {
@@ -130,12 +134,12 @@ fn main(){
                                     let state = match can_frames.next(){
                                         None => {
                                             let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
-                                                                              &[]
+                                                                              remaining
                                                                               , false, false).unwrap();
                                             cmd_frame.force_extended();
                                             cs.write_frame(&cmd_frame).ok();
-                                            //State::WaitingForCommand
-                                            State::EndOfTransfer }
+                                            State::EndOfTransfer
+                                        }
                                         Some(frame) => {
                                             let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
                                                                               frame
@@ -158,12 +162,12 @@ fn main(){
                            }
                            State::EndOfTransfer => {
                                println!("State {:?}", state);
-                               /*let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
+                               let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
                                                                  &[]
                                                                  , false, false).unwrap();
                                cmd_frame.force_extended();
-                               cs.write_frame(&cmd_frame).ok();*/
-                               break;
+                               cs.write_frame(&cmd_frame).ok();
+                               prev_state = state;
                                State::WaitingForCommand
                            }
                        }
