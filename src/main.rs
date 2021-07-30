@@ -97,7 +97,7 @@ fn main(){
     };
 
     cs.set_read_timeout(Duration::from_millis(20_000));
-
+    let mut index = 0;
 
     let mut can_frames = nv_slice.chunks_exact(8);
     loop {
@@ -107,10 +107,12 @@ fn main(){
                     RX_NV_CONFIG => {
                        state = match state {
                            State::WaitingForCommand => {
+                               println!("State {:?}", state);
                                prev_state = state;
                                State::StartOfTransfer
                            }
                            State::StartOfTransfer => {
+                               println!("State {:?}", state);
                                let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
                                                                  &BOOTLOADER_KEY.to_be_bytes()
                                                                  , false, false).unwrap();
@@ -120,6 +122,7 @@ fn main(){
                                State::StartOfTransfer
                            }
                            State::DataTransfer => {
+                               println!("State {:?}", state);
                               if prev_state == State::StartOfTransfer || prev_state == DataTransfer{
                                     let state = match can_frames.next(){
                                         None => {State::EndOfTransfer}
@@ -129,6 +132,8 @@ fn main(){
                                                                               , false, false).unwrap();
                                             cmd_frame.force_extended();
                                             cs.write_frame(&cmd_frame).ok();
+                                            index += 1;
+                                            println!("Send: {}", index);
                                             State::DataTransfer
                                         }
                                     };
@@ -141,6 +146,7 @@ fn main(){
 
                            }
                            State::EndOfTransfer => {
+                               println!("State {:?}", state);
                                let mut cmd_frame = CANFrame::new(RX_NV_CONFIG,
                                                                  &[]
                                                                  , false, false).unwrap();
