@@ -160,6 +160,7 @@ fn main(){
                                                                  , false, false).unwrap();
                                cmd_frame.force_extended();
                                cs.write_frame(&cmd_frame).ok();*/
+                               break;
                                State::WaitingForCommand
                            }
                        }
