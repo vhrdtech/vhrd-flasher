@@ -119,7 +119,7 @@ fn main(){
                                cmd_frame.force_extended();
                                cs.write_frame(&cmd_frame).ok();
                                prev_state = state;
-                               State::StartOfTransfer
+                               State::DataTransfer
                            }
                            State::DataTransfer => {
                                println!("State {:?}", state);
@@ -134,6 +134,7 @@ fn main(){
                                             cs.write_frame(&cmd_frame).ok();
                                             index += 1;
                                             println!("Send: {}", index);
+                                            prev_state = state;
                                             State::DataTransfer
                                         }
                                     };
