@@ -447,12 +447,12 @@ fn main() {
                             }
                         }
                     }
+                    match flasher.worker(&working_node_id){
+                        None => {}
+                        Some(f) => { can_socket.write_frame(&f).ok();}
+                    }
                 }
             }
-        }
-        match flasher.worker(&working_node_id){
-            None => {}
-            Some(f) => { can_socket.write_frame(&f).ok();}
         }
     }
 
