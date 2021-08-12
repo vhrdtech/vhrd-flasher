@@ -58,7 +58,7 @@ const READ_FIRMWARE_CMD: u8 = 0x02;
 const READ_BOOTLOADER_CMD: u8 = 0x03;
 
 
-const FLASHER_NODE_ID: NodeId = NodeId::new(127).unwrap();
+const FLASHER_NODE_ID: NodeId = NodeId::new(126).unwrap();
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum FlasherState{
