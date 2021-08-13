@@ -53,6 +53,8 @@ const WRITE_CONFIG_SERVICE: ServiceId = ServiceId::new(1).unwrap();
 const WRITE_FIRMWARE_SERVICE: ServiceId = ServiceId::new(2).unwrap();
 const UNLOCK_BOOTLOADER: ServiceId = ServiceId::new(3).unwrap();
 
+const REBOOT_DEVICE: ServiceId = ServiceId::new(4).unwrap();
+
 const READ_CONFIG_CMD: u8 = 0x01;
 const READ_FIRMWARE_CMD: u8 = 0x02;
 const READ_BOOTLOADER_CMD: u8 = 0x03;
@@ -115,13 +117,13 @@ impl Flasher{
                         println!("Error");
                     }
                     HARD_BIT_MSG => {
-                        println!("HardBit");
-                        if self.state == FlasherState::Waiting {
+                        if self.state == FlasherState::Waiting && data.is_empty(){
+                            println!("HardBit");
                             self.state = FlasherState::GotHardBit;
                         }
                     }
                     REBOOT_MSG => {
-                        println!("Reboot");
+                        println!("RX_Reboot");
                     }
                     BOOT_MSG => {
                         println!("Boot");
@@ -219,11 +221,11 @@ impl Flasher{
                     let rx_nv_ptr = &rx_nv_cfg as *const _;
                     let mut nv_slice = unsafe{std::slice::from_raw_parts((rx_nv_ptr as *const u8), SIZE_OF_NVCONFIG)};
                     let crc = Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(&nv_slice[8..SIZE_OF_NVCONFIG]) as u64;
-                    for i in 0..10{
+                    /*for i in 0..10{
                         println!("nv_sile[{}]: {:08x}",i, nv_slice[i]);
-                    }
+                    }*/
                     if rx_nv_cfg.config_crc != crc{
-                        println!("Wrong CRC!");
+                        //println!("Wrong CRC!");
                         self.state = FlasherState::WaitingBootloader;
                         let mut data = [0u8;2];
                         data[0] = READ_BOOTLOADER_CMD;
@@ -414,10 +416,18 @@ fn main() {
 
     let mut flasher = Flasher::new(&image_byte_array, &NV_CONFIG, &new_node_id);
 
+    let rb_frame = CANFrame::new(
+        unsafe{CanId::new_service_kind(FLASHER_NODE_ID, working_node_id, REBOOT_DEVICE, true, Priority::High).into()},
+        &[],
+        false, false
+    ).unwrap();
+
+    can_socket.write_frame(&rb_frame).ok();
+
     loop {
         if let Ok(frame) = can_socket.read_frame() {
             if let Ok(uavcan_id) = CanId::try_from(frame.id()) {
-                if uavcan_id.source_node_id == working_node_id {
+                if uavcan_id.source_node_id == working_node_id{
                     let (uavcan_msg_type, data) = match frame.data().last() {
                         None => { (UavCanMsgType::NoData, [].as_slice()) }
                         Some(last_byte) => {
@@ -442,7 +452,8 @@ fn main() {
                             flasher.rx_parser(RxEvent::Message(uavcan_id.source_node_id, m.subject_id, uavcan_msg_type), data);
                         }
                         TransferKind::Service(s) => {
-                            if !s.is_request {
+                            //println!("Dest node_id: {:?}", s.destination_node_id);
+                            if !s.is_request && s.destination_node_id == FLASHER_NODE_ID {
                                 flasher.rx_parser(RxEvent::Response(uavcan_id.source_node_id, s.service_id, uavcan_msg_type), data);
                             }
                         }
