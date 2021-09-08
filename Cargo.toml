@@ -9,5 +9,5 @@ socketcan = {git = "https://github.com/klimatt/socketcan-rs.git", branch = "1.7.
 vhrd-module-nvconfig = {git = "https://github.com/vhrdtech/vhrd-module-nvconfig.git", branch = "master"}
 clap = "3.0.0-beta.1"
 crc = "2.0.0"
-uavcan-llr = {path = "../uavcan-llr", features = ["vhrdcan"]}
-vhrdcan = {path = "../vhrdcan"}#"0.1.0"
+uavcan-llr = { features = ["vhrdcan"], git = "https://github.com/vhrdtech/uavcan-llr.git" }
+vhrdcan = { git = "https://github.com/vhrdtech/vhrdcan.git", version = "0.1.0" }
