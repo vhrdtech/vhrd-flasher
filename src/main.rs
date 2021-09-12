@@ -95,7 +95,8 @@ struct Flasher{
     send_arr: Vec<CANFrame>,
     send_idx: u32,
 
-    pb: ProgressBar
+    pb: ProgressBar,
+    tx_bytes_len: u64
 }
 
 impl Flasher{
@@ -115,12 +116,13 @@ impl Flasher{
             firmware: new_firmware.clone(),
             nv_config,
             prev_state: FlasherState::Waiting,
-            state: FlasherState::Waiting,
+            state: FlasherState::WriteNewFirmware,//FlasherState::Waiting,
             rx_raw_vec: Vec::<u8>::new(),
 
             send_arr: Vec::<CANFrame>::new(),
             send_idx: 0,
-            pb
+            pb,
+            tx_bytes_len: 0
         }
     }
 
@@ -358,16 +360,18 @@ impl Flasher{
                 if self.send_arr.len() - 1 >= self.send_idx as usize {
                     self.state = FlasherState::SendingNewFirmware;
                     let p_i = self.send_idx;
-                    self.send_idx += 1;
                     let frame: CANFrame = self.send_arr[p_i as usize];
-                    self.pb.set_position(frame.data().len() as u64 - 1u64);
+                    self.send_idx += 1;
+                    self.tx_bytes_len += frame.data().len() as u64 - 1u64;
+                    self.pb.set_position(self.tx_bytes_len );
                     return Some(frame);
                 }
+                self.pb.finish();
                 self.state = FlasherState::DoneSendingNewFirmware;
                 None
             }
             FlasherState::DoneSendingNewFirmware=>{
-                println!("All sent!");
+                //println!("All sent!");
                 None
             }
             _ => {None}
@@ -441,7 +445,11 @@ fn main() {
     can_socket.write_frame(&rb_frame).ok();
 
     loop {
-        if let Ok(frame) = can_socket.read_frame() {
+        match flasher.worker(&working_node_id){
+            None => {}
+            Some(f) => { can_socket.write_frame(&f).ok();}
+        }
+        /*if let Ok(frame) = can_socket.read_frame() {
             if let Ok(uavcan_id) = CanId::try_from(frame.id()) {
                 if uavcan_id.source_node_id == working_node_id{
                     let (uavcan_msg_type, data) = match frame.data().last() {
@@ -480,7 +488,7 @@ fn main() {
                     }
                 }
             }
-        }
+        }*/
     }
 
 }
