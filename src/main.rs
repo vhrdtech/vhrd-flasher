@@ -116,7 +116,7 @@ impl Flasher{
             firmware: new_firmware.clone(),
             nv_config,
             prev_state: FlasherState::Waiting,
-            state: FlasherState::WriteNewFirmware,//FlasherState::Waiting,
+            state: FlasherState::Waiting,
             rx_raw_vec: Vec::<u8>::new(),
 
             send_arr: Vec::<CANFrame>::new(),
