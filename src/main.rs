@@ -24,6 +24,11 @@ use crc::{Crc, Algorithm, CRC_32_AUTOSAR};
 use std::slice::{ChunksExact, Iter};
 use std::any::Any;
 
+use indicatif::{ProgressBar, ProgressStyle};
+use std::thread;
+use std::cmp::min;
+
+
 #[derive(Debug)]
 enum DataTransferState{
     StartOfTransfer,
@@ -88,7 +93,9 @@ struct Flasher{
     rx_raw_vec: Vec<u8>,
 
     send_arr: Vec<CANFrame>,
-    send_idx: u32
+    send_idx: u32,
+
+    pb: ProgressBar
 }
 
 impl Flasher{
@@ -97,6 +104,13 @@ impl Flasher{
         nv_config.board_config.uavcan_node_id = node_id.inner();
 
         println!("NEW_uavcan_node_id: {}",nv_config.board_config.uavcan_node_id);
+
+        let mut pb = ProgressBar::new(new_firmware.len() as u64);
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .with_key("eta", |state| format!("{:.1}s", state.eta().as_secs_f64()))
+            .progress_chars("#>-"));
+
         Flasher{
             firmware: new_firmware.clone(),
             nv_config,
@@ -105,7 +119,8 @@ impl Flasher{
             rx_raw_vec: Vec::<u8>::new(),
 
             send_arr: Vec::<CANFrame>::new(),
-            send_idx: 0
+            send_idx: 0,
+            pb
         }
     }
 
@@ -344,7 +359,9 @@ impl Flasher{
                     self.state = FlasherState::SendingNewFirmware;
                     let p_i = self.send_idx;
                     self.send_idx += 1;
-                    return Some(self.send_arr[p_i as usize]);
+                    let frame: CANFrame = self.send_arr[p_i as usize];
+                    self.pb.set_position(frame.data().len() as u64 - 1u64);
+                    return Some(frame);
                 }
                 self.state = FlasherState::DoneSendingNewFirmware;
                 None
@@ -391,7 +408,6 @@ fn main() {
     let new_node_id = NodeId::new(matches.value_of("Setup_NEW_node_id").unwrap().parse::<u8>().expect("Setup_NEW_node_id is wrong")).unwrap();
     can_socket.set_read_timeout(Duration::from_millis(5000));
 
-
     let bin_path = Path::new(matches.value_of("file.bin").unwrap());
     let mut file = match File::open(&bin_path) {
         Err(why) => panic!("Couldn't open {}: {}", bin_path.display(), why),
@@ -400,12 +416,12 @@ fn main() {
             file
         },
     };
+
     let mut image_byte_array: Vec<u8> = Vec::new();
     match file.read_to_end(image_byte_array.as_mut()) {
         Err(why) => panic!("Couldn't read {}: {}", bin_path.display(), why),
         Ok(_) => println!("Successfully read {:}[bytes]", image_byte_array.len()),
     }
-
 
     let ptr = &NV_CONFIG as *const _;
     let mut nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};

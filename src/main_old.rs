@@ -27,6 +27,10 @@ const RX_WAITING_CMD: u32 = 0x0000_0100;
 const BOOTLOADER_KEY: u32 = 0xDEADBEEF;
 
 
+fn draw_percent(p: u8){
+    print!("{}", (8u8 as char));
+}
+
 
 fn main(){
     let matches = App::new("vhrd-flasher")
