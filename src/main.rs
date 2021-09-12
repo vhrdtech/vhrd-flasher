@@ -371,7 +371,7 @@ impl Flasher{
                 None
             }
             FlasherState::DoneSendingNewFirmware=>{
-                //println!("All sent!");
+                println!("All sent!");
                 None
             }
             _ => {None}
@@ -445,11 +445,7 @@ fn main() {
     can_socket.write_frame(&rb_frame).ok();
 
     loop {
-        match flasher.worker(&working_node_id){
-            None => {}
-            Some(f) => { can_socket.write_frame(&f).ok();}
-        }
-        /*if let Ok(frame) = can_socket.read_frame() {
+        if let Ok(frame) = can_socket.read_frame() {
             if let Ok(uavcan_id) = CanId::try_from(frame.id()) {
                 if uavcan_id.source_node_id == working_node_id{
                     let (uavcan_msg_type, data) = match frame.data().last() {
@@ -488,7 +484,7 @@ fn main() {
                     }
                 }
             }
-        }*/
+        }
     }
 
 }
