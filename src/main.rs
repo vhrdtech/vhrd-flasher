@@ -11,7 +11,7 @@ use socketcan::{CANFrame, CANSocket, CANFilter};
 
 use clap::{Arg, App};
 use uavcan_llr::types::{TransferId, CanId, NodeId, SubjectId, Priority, TransferKind, Service, ServiceId};
-use uavcan_llr::tailbyte::{TailByte, TailByteIter};
+use uavcan_llr::tailbyte::{TailByte, TailByteIter, Kind};
 use std::time::Duration;
 use std::convert::TryFrom;
 use std::sync::mpsc;
@@ -203,7 +203,7 @@ impl Flasher{
                         self.state = FlasherState::WaitingNvConfig;
                         let mut data = [0u8;2];
                         data[0] = READ_CONFIG_CMD;
-                        data[1] = TailByte::single_frame_transfer(TransferId::new(0).unwrap()).as_byte();
+                        data[1] = TailByte::new_single_frame(TransferId::new(0).unwrap()).as_byte();
                         Some(CANFrame::new(unsafe{CanId::new_service_kind(FLASHER_NODE_ID, *dst_node_id, READ_SERVICE, true, Priority::High).into()},
                                            data.borrow()
                                            , false, false).unwrap())
@@ -229,7 +229,7 @@ impl Flasher{
                         self.state = FlasherState::WaitingBootloader;
                         let mut data = [0u8;2];
                         data[0] = READ_BOOTLOADER_CMD;
-                        data[1] = TailByte::single_frame_transfer(TransferId::new(0).unwrap()).as_byte();
+                        data[1] = TailByte::new_single_frame(TransferId::new(0).unwrap()).as_byte();
                         return Some(CANFrame::new(unsafe{CanId::new_service_kind(FLASHER_NODE_ID, *dst_node_id, READ_SERVICE, true, Priority::High).into()},
                                                   data.borrow()
                                                   , false, false).unwrap());
@@ -269,7 +269,7 @@ impl Flasher{
                 //nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
                 let chunks = nv_slice.chunks_exact(7);
                 let rm = chunks.remainder();
-                let mut tail_b = TailByte::multi_frame_transfer(TransferId::new(0).unwrap(), chunks.len() + if rm.is_empty(){ 0usize } else { 1usize });
+                let mut tail_b = TailByte::new_multi_frame(TransferId::new(0).unwrap(), chunks.len() + if rm.is_empty(){ 0usize } else { 1usize });
                 let mut can_data = [0u8; 8];
                 for msg in chunks.into_iter(){
                     can_data[0..7].copy_from_slice(&msg[0..7]);
@@ -314,7 +314,7 @@ impl Flasher{
                 self.send_idx = 0;
                 let chunks = self.firmware.as_slice().chunks_exact(7);
                 let rm = chunks.remainder();
-                let mut tail_b = TailByte::multi_frame_transfer(TransferId::new(0).unwrap(), chunks.len() + if rm.is_empty(){ 0usize } else { 1usize });
+                let mut tail_b = TailByte::new_multi_frame(TransferId::new(0).unwrap(), chunks.len() + if rm.is_empty(){ 0usize } else { 1usize });
                 let mut can_data = [0u8; 8];
                 for msg in chunks.into_iter(){
                     can_data[0..7].copy_from_slice(&msg[0..7]);
@@ -432,12 +432,12 @@ fn main() {
                         None => { (UavCanMsgType::NoData, [].as_slice()) }
                         Some(last_byte) => {
                             let tail_byte = TailByte::from(*last_byte);
-                            let msg_type = if tail_byte.end_of_transfer && tail_byte.start_of_transfer {
+                            let msg_type = if tail_byte.kind == Kind::SingleFrame {
                                 UavCanMsgType::Single
                             } else {
-                                if tail_byte.start_of_transfer && tail_byte.toggle_bit && !tail_byte.end_of_transfer {
+                                if tail_byte.kind == Kind::MultiFrame {
                                     UavCanMsgType::Multi(DataTransferState::StartOfTransfer)
-                                } else if tail_byte.end_of_transfer && !tail_byte.start_of_transfer
+                                } else if tail_byte.kind == Kind::EndT0 || tail_byte.kind == Kind::EndT1
                                 {
                                     UavCanMsgType::Multi(DataTransferState::EndOfTransfer)
                                 } else {
