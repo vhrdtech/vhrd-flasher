@@ -50,7 +50,7 @@ enum RxEvent{
 }
 
 const ERROR_MSG: SubjectId = SubjectId::new(0).unwrap();
-const HARD_BIT_MSG: SubjectId = SubjectId::new(10).unwrap();
+const HEART_BEAT_MSG: SubjectId = SubjectId::new(10).unwrap();
 const REBOOT_MSG: SubjectId = SubjectId::new(2).unwrap();
 const BOOT_MSG: SubjectId = SubjectId::new(1).unwrap();
 
@@ -134,9 +134,9 @@ impl Flasher{
                     ERROR_MSG => {
                         println!("Error");
                     }
-                    HARD_BIT_MSG => {
+                    HEART_BEAT_MSG => {
                         if self.state == FlasherState::Waiting && data.is_empty(){
-                            println!("HeartBit");
+                            println!("HeartBeat");
                             self.state = FlasherState::GotHardBit;
                         }
                     }
