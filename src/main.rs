@@ -28,6 +28,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::thread;
 use std::cmp::min;
 
+use colored::*;
 
 #[derive(Debug)]
 enum DataTransferState{
@@ -106,7 +107,7 @@ impl Flasher{
 
         println!("NEW_uavcan_node_id: {}",nv_config.board_config.uavcan_node_id);
 
-        let mut pb = ProgressBar::new(new_firmware.len() as u64);
+        let mut pb = ProgressBar::new(SIZE_OF_NVCONFIG as u64);
         pb.set_style(ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
             .with_key("eta", |state| format!("{:.1}s", state.eta().as_secs_f64()))
@@ -135,12 +136,12 @@ impl Flasher{
                     }
                     HARD_BIT_MSG => {
                         if self.state == FlasherState::Waiting && data.is_empty(){
-                            println!("HardBit");
+                            println!("HeartBit");
                             self.state = FlasherState::GotHardBit;
                         }
                     }
                     REBOOT_MSG => {
-                        println!("RX_Reboot");
+                        println!("Reboot");
                     }
                     BOOT_MSG => {
                         println!("Boot");
@@ -179,7 +180,6 @@ impl Flasher{
                                     }
                                     DataTransferState::EndOfTransfer => {
                                         self.rx_raw_vec.extend_from_slice(data);
-                                        println!("{:?}",self.rx_raw_vec.len());
                                         if self.state == FlasherState::WaitingNvConfig {
                                             self.state = FlasherState::GotNvConfig;
                                         }
@@ -263,7 +263,6 @@ impl Flasher{
             FlasherState::GotNvBootloader => {
                 let bootloder_crc = Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(self.rx_raw_vec.as_slice()) as u64;
                 println!("Bootloader crc = 0x{:08x}", bootloder_crc);
-                println!("Bootloader len = {}", self.rx_raw_vec.len());
                 self.nv_config.board_config.bootloader_size = self.rx_raw_vec.len() as u32;
                 self.nv_config.board_config.bootloader_crc = bootloder_crc;
                 self.state = FlasherState::WriteNewNvConfig;
@@ -276,9 +275,7 @@ impl Flasher{
                 let ptr = &nv_cfg as *const _;
                 let mut nv_slice = unsafe{std::slice::from_raw_parts((ptr as *const u8), SIZE_OF_NVCONFIG)};
                 let crc = Crc::<u32>::new(&CRC_32_AUTOSAR).checksum(&nv_slice[8..(SIZE_OF_NVCONFIG)]) as u64;
-
-                println!("NEW_uavcan_node_id: {}",self.nv_config.board_config.uavcan_node_id);
-                println!("tx crc 0x{:08x}",crc);
+                println!("NVConfig NEW crc = 0x{:08x}",crc);
                 nv_cfg.config_crc = crc;
                 /*for i in 0..nv_slice.len(){
                     println!("tx_nv_sile[{}]: 0x{:02x}",i, nv_slice[i]);
@@ -309,20 +306,32 @@ impl Flasher{
 
                 }
                 self.state = FlasherState::SendingNewNvConfig;
+                println!("{}","Erasing and Sending new NVConfig".yellow());
                 None
             }
             FlasherState::SendingNewNvConfig => {
                 if self.send_arr.len() - 1 >= self.send_idx as usize {
                     self.state = FlasherState::SendingNewNvConfig;
                     let p_i = self.send_idx;
+                    let frame: CANFrame = self.send_arr[p_i as usize];
                     self.send_idx += 1;
-                    return Some(self.send_arr[p_i as usize]);
+                    self.tx_bytes_len += frame.data().len() as u64 - 1u64;
+                    self.pb.set_position(self.tx_bytes_len );
+                    return Some(frame);
                 }
                 self.state = FlasherState::DoneSendingNewConfig;
                 None
             }
             FlasherState::DoneSendingNewConfig=>{
-                println!("NV config has been sent");
+                self.pb.finish();
+                println!("{}", "New NVConfig has been sent!".green());
+                self.tx_bytes_len = 0;
+                self.pb = ProgressBar::new(self.firmware.len() as u64);
+                self.pb.set_style(ProgressStyle::default_bar()
+                    .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+                    .with_key("eta", |state| format!("{:.1}s", state.eta().as_secs_f64()))
+                    .progress_chars("#>-"));
+
                 self.state = FlasherState::WriteNewFirmware;
                 None
             }
@@ -354,6 +363,7 @@ impl Flasher{
 
                 }
                 self.state = FlasherState::SendingNewFirmware;
+                println!("{}", "Erasing and Sending new firmware".yellow());
                 None
             }
             FlasherState::SendingNewFirmware => {
@@ -371,7 +381,8 @@ impl Flasher{
                 None
             }
             FlasherState::DoneSendingNewFirmware=>{
-                println!("All sent!");
+                println!("{}","New firmware has been sent!".green());
+                std::process::exit(1);
                 None
             }
             _ => {None}
@@ -501,7 +512,7 @@ patch: 0
 },
 bootloader_size: 0,
 bootloader_crc: 0,
-bootloader_timeout_ms: 5_000,
+bootloader_timeout_ms: 2_000,
 fw_version: Version {
 major: 0,
 minor: 0,

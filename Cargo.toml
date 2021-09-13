@@ -12,3 +12,4 @@ crc = "2.0.0"
 uavcan-llr = { features = ["vhrdcan"], git = "https://github.com/vhrdtech/uavcan-llr.git" }
 vhrdcan = { git = "https://github.com/vhrdtech/vhrdcan.git", version = "0.1.0" }
 indicatif = { git = "https://github.com/mitsuhiko/indicatif.git",  rev = "27c8cc3078b65aa2573dbe673a00471d6662698c"}
+colored = "2"
