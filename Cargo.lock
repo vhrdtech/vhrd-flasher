@@ -145,9 +145,9 @@ dependencies = [
 
 [[package]]
 name = "crc-any"
-version = "2.3.12"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79269446ee9793fb06fb297c61dd65e53e880fd10bdb222d544db1a98a2f083b"
+checksum = "44c268ef4daf6fe48c6794ffb5e138afb6ea405b7987ec8f8501b817a84a56d6"
 
 [[package]]
 name = "crc-catalog"
@@ -276,9 +276,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.101"
+version = "0.2.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cb00336871be5ed2c8ed44b60ae9959dc5b9f08539422ed43f09e34ecaeba21"
+checksum = "a2a5ac8f984bfcf3a823267e5fde638acc3325f6496633a5da6bb6eb2171e103"
 
 [[package]]
 name = "nb"
@@ -466,7 +466,7 @@ dependencies = [
 [[package]]
 name = "uavcan-llr"
 version = "0.1.0"
-source = "git+https://github.com/vhrdtech/uavcan-llr.git#79db3cf4431bf0c09bafb77780463013775dc641"
+source = "git+https://github.com/vhrdtech/uavcan-llr.git#b25b8dc78a2508af9e50b1c883354e16e7e4aaf1"
 dependencies = [
  "crc-any",
  "hash32",
@@ -483,9 +483,9 @@ checksum = "8895849a949e7845e06bd6dc1aa51731a103c42707010a5b591c0038fb73385b"
 
 [[package]]
 name = "unicode-width"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
+checksum = "3ed742d4ea2bd1176e236172c8429aaf54486e7ac098db29ffe6529e0ce50973"
 
 [[package]]
 name = "unicode-xid"
@@ -533,11 +533,10 @@ source = "git+https://github.com/vhrdtech/vhrd-module-nvconfig.git?branch=master
 [[package]]
 name = "vhrdcan"
 version = "0.1.0"
-source = "git+https://github.com/vhrdtech/vhrdcan.git#9ffe851daae96c315d694df398b1525a872f3aca"
+source = "git+https://github.com/vhrdtech/vhrdcan.git#10bca9c3cecb6c73045e0d8b9b148326a738cdad"
 dependencies = [
  "hash32",
  "hash32-derive",
- "heapless",
 ]
 
 [[package]]
